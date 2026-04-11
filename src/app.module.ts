@@ -9,6 +9,7 @@ import { SportsModule } from './sports/sports.module';
 import { ReservationsModule } from './reservations/reservations.module';
 import { PaymentsModule } from './payments/payments.module';
 import { CommonModule } from './common/common.module';
+import { ReservationService } from './reservation/reservation.service';
 
 @Module({
   imports: [
@@ -24,6 +25,6 @@ import { CommonModule } from './common/common.module';
     CommonModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, ReservationService],
 })
 export class AppModule {}
