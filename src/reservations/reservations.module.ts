@@ -1,4 +1,7 @@
 import { Module } from '@nestjs/common';
+import { ReservationsController } from './reservations.controller';
 
-@Module({})
+@Module({
+  controllers: [ReservationsController]
+})
 export class ReservationsModule {}
