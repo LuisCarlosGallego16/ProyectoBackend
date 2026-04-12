@@ -6,7 +6,7 @@ export class ScenariosController {
     constructor(private readonly scenariosService: ScenariosService) {}
 
     @Get()
-    obtenerScenarios() {
-        return this.scenariosService.obtenerScenarios();
+    obtenerEscenarios() {
+        return this.scenariosService.obtenerEscenarios();
     }
 }

@@ -3,23 +3,24 @@ import { RegistroDto } from './dto/registro.dto';
 import { LoginDto } from './dto/login.dto';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
 
-  constructor(private servicioUsuarios: UsersService) {}
+  constructor(
+    private servicioUsuarios: UsersService,
+    private jwtService: JwtService
+  ) {}
 
   async registrar(datos: RegistroDto) {
 
     const usuarioExistente = await this.servicioUsuarios.buscarPorCorreo(datos.correo);
 
     if (usuarioExistente) {
-      return {
-        mensaje: 'El usuario ya existe'
-      };
+      return { mensaje: 'El usuario ya existe' };
     }
 
-    // 🔐 ENCRIPTAR CONTRASEÑA
     const hash = await bcrypt.hash(datos.contrasena, 10);
 
     const usuario = await this.servicioUsuarios.crear({
@@ -38,23 +39,22 @@ export class AuthService {
     const usuario = await this.servicioUsuarios.buscarPorCorreo(datos.correo);
 
     if (!usuario) {
-      return {
-        mensaje: 'Usuario no encontrado'
-      };
+      return { mensaje: 'Usuario no encontrado' };
     }
 
-    // 🔑 COMPARAR CONTRASEÑA
     const esValida = await bcrypt.compare(datos.contrasena, usuario.contrasena);
 
     if (!esValida) {
-      return {
-        mensaje: 'Contraseña incorrecta'
-      };
+      return { mensaje: 'Contraseña incorrecta' };
     }
+
+    const payload = { id: usuario.id, correo: usuario.correo };
+
+    const token = this.jwtService.sign(payload);
 
     return {
       mensaje: 'Inicio de sesión exitoso',
-      usuario
+      access_token: token
     };
   }
 }
