@@ -10,12 +10,27 @@ import { ReservationsModule } from './reservations/reservations.module';
 import { PaymentsModule } from './payments/payments.module';
 import { CommonModule } from './common/common.module';
 
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Usuario } from './users/entities/usuario.entity';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+
+    // 🔥 BASE DE DATOS
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: 'localhost',
+      port: 5432,
+      username: 'postgres',
+      password: 'postgres',
+      database: 'reserva_db',
+      entities: [Usuario],
+      synchronize: true, // ⚠️ solo desarrollo
+    }),
+
     UsersModule,
     AuthModule,
     ScenariosModule,
