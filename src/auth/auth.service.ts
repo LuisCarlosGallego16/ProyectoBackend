@@ -30,7 +30,10 @@ export class AuthService {
 
     return {
       mensaje: 'Usuario registrado correctamente',
-      usuario
+      usuario: {
+        id: usuario.id,
+        correo: usuario.correo
+  }
     };
   }
 

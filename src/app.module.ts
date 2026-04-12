@@ -19,16 +19,16 @@ import { Usuario } from './users/entities/usuario.entity';
       isGlobal: true,
     }),
 
-    // 🔥 BASE DE DATOS
+    // BD 
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: 'localhost',
       port: 5432,
       username: 'postgres',
-      password: 'postgres',
+      password: 'natavelez0903', 
       database: 'reserva_db',
       entities: [Usuario],
-      synchronize: true, // ⚠️ solo desarrollo
+      synchronize: true, 
     }),
 
     UsersModule,
