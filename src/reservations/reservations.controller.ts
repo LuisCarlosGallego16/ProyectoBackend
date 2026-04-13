@@ -1,40 +1,32 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
+import type { Request } from 'express';
+
 import { ReservationsService } from './reservations.service';
 import { CrearReservaDto } from './dto/crear-reserva.dto';
-import { ActualizarReservaDto } from './dto/actualizar-reserva.dto';
+import { JwtGuardia } from '../auth/guardias/jwt.guardia';
 
-@Controller('reservations')
+@Controller('reservas')
 export class ReservationsController {
-  constructor(private readonly reservationsService: ReservationsService) {}
+  constructor(private readonly service: ReservationsService) {}
 
-  @Get()
-  obtenerReservas() {
-    return this.reservationsService.obtenerReservas();
-  }
-
-  @Get(':id')
-  obtenerReservaPorId(@Param('id') id: string) {
-    return this.reservationsService.obtenerReservaPorId(Number(id));
-  }
-
+  @UseGuards(JwtGuardia)
   @Post()
-  crearReserva(@Body() crearReservaDto: CrearReservaDto) {
-    return this.reservationsService.crearReserva(crearReservaDto);
+  crear(@Body() dto: CrearReservaDto, @Req() req: Request) {
+    const user = req.user as any;
+    return this.service.crear(dto, user.userId);
   }
 
-  @Patch(':id')
-  actualizarReserva(
-    @Param('id') id: string,
-    @Body() actualizarReservaDto: ActualizarReservaDto,
-  ) {
-    return this.reservationsService.actualizarReserva(
-      Number(id),
-      actualizarReservaDto,
-    );
-  }
-
-  @Delete(':id')
-  eliminarReserva(@Param('id') id: string) {
-    return this.reservationsService.eliminarReserva(Number(id));
+  @UseGuards(JwtGuardia)
+  @Get()
+  obtener(@Req() req: Request) {
+    const user = req.user as any;
+    return this.service.findAll(user);
   }
 }

@@ -1,7 +1,4 @@
-export class actualizarEscenarioDto {
-    nombre?: string;
-    ubicacion?: string
-    capacidadMaxima?: number;
-    valorPorHora?: number;
-    estado?: string;
-}
+import { PartialType } from '@nestjs/mapped-types';
+import { CrearEscenarioDto } from './crear-escenario.dto';
+
+export class ActualizarEscenarioDto extends PartialType(CrearEscenarioDto) {}

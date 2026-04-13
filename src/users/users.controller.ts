@@ -1,29 +1,59 @@
-import { Body, Controller, Get, Param, Post, Delete } from '@nestjs/common';
-import { UsersService } from './users.service';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
+
+import { UsuariosService } from './users.service';
 import { CrearUsuarioDto } from './dto/crear-usuario.dto';
+import { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto';
+
+import { JwtGuardia } from '../auth/guardias/jwt.guardia';
+import { RolesGuardia } from '../auth/guardias/roles.guardia';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('usuarios')
-export class UsersController {
-
-  constructor(private servicioUsuarios: UsersService) {}
+export class UsuariosController {
+  constructor(private readonly usuariosService: UsuariosService) {}
 
   @Post()
-  crear(@Body() datos: CrearUsuarioDto) {
-    return this.servicioUsuarios.crear(datos);
+  crear(@Body() crearUsuarioDto: CrearUsuarioDto) {
+    return this.usuariosService.crear(crearUsuarioDto);
   }
 
+  @UseGuards(JwtGuardia, RolesGuardia)
+  @Roles('admin')
   @Get()
   obtenerTodos() {
-    return this.servicioUsuarios.buscarTodos();
+    return this.usuariosService.obtenerTodos();
   }
 
+  @UseGuards(JwtGuardia, RolesGuardia)
+  @Roles('admin')
   @Get(':id')
-  obtenerPorId(@Param('id') id: string) {
-    return this.servicioUsuarios.buscarPorId(Number(id));
+  obtenerUno(@Param('id') id: string) {
+    return this.usuariosService.obtenerUno(+id);
   }
 
+  @UseGuards(JwtGuardia, RolesGuardia)
+  @Roles('admin')
+  @Patch(':id')
+  actualizar(
+    @Param('id') id: string,
+    @Body() actualizarUsuarioDto: ActualizarUsuarioDto,
+  ) {
+    return this.usuariosService.actualizar(+id, actualizarUsuarioDto);
+  }
+
+  @UseGuards(JwtGuardia, RolesGuardia)
+  @Roles('admin')
   @Delete(':id')
   eliminar(@Param('id') id: string) {
-    return this.servicioUsuarios.eliminar(Number(id));
+    return this.usuariosService.eliminar(+id);
   }
 }

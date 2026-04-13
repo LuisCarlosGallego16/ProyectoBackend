@@ -1,28 +1,22 @@
-import { Body, Controller, Post, Get, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { RegistroDto } from './dto/registro.dto';
-import { LoginDto } from './dto/login.dto';
-import { JwtGuardia } from './guardias/jwt.guardia';
 
 @Controller('auth')
 export class AuthController {
+  constructor(private authService: AuthService) {}
 
-  constructor(private servicioAuth: AuthService) {}
-
-  @Post('registro')
-  registrar(@Body() datos: RegistroDto) {
-    return this.servicioAuth.registrar(datos);
-  }
-
+  // LOGIN (FASE 1)
   @Post('login')
-  iniciarSesion(@Body() datos: LoginDto) {
-    return this.servicioAuth.iniciarSesion(datos);
+  login(@Body() body: any) {
+    return this.authService.login(body.email, body.password);
   }
 
-  // ruta protegida
-  @UseGuards(JwtGuardia)
-  @Get('perfil')
-  obtenerPerfil(@Req() req) {
-    return req.user;
+  // VERIFICAR 2FA
+  @Post('verify-2fa')
+  verificar(@Body() body: any) {
+    return this.authService.verificarCodigo(
+      body.email,
+      body.codigo,
+    );
   }
 }

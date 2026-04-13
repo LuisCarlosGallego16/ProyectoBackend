@@ -1,7 +1,16 @@
-export class crearEscenarioDto {
-    nombre!: string;
-    ubicacion!: string;
-    capacidadMaxima!: number;
-    valorPorHora!: number;
-    estado!: string;
+import { IsString, IsNumber } from 'class-validator';
+
+export class CrearEscenarioDto {
+
+  @IsString()
+  nombre!: string;
+
+  @IsString()
+  ubicacion!: string;
+
+  @IsNumber()
+  capacidadMaxima!: number;
+
+  @IsNumber()
+  valorPorHora!: number;
 }

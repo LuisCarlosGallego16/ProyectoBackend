@@ -1,227 +1,116 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
+
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
+import { Reserva } from './entity/reserva.entity';
 import { CrearReservaDto } from './dto/crear-reserva.dto';
-import { ActualizarReservaDto } from './dto/actualizar-reserva.dto';
+
+import { Usuario } from '../users/entity/usuario.entity';
+import { Deporte } from '../sports/entity/deporte.entity';
+import { Escenario } from '../scenarios/entity/escenario.entity';
+import { HorarioDeporte } from '../sports/entity/horario-deporte.entity';
 
 @Injectable()
 export class ReservationsService {
-    private reservations = [
-        {
-            id: 1,
-            userId: 1,
-            scenarioId: 1,
-            sportId: 1,
-            fecha: '2026-04-12',
-            horaInicio: '08:00',
-            horaFin: '10:00',
-            cantidadPersonas: 10,
-            estado: 'activa',
-        },
-    ];
+  constructor(
+    @InjectRepository(Reserva)
+    private reservaRepo: Repository<Reserva>,
 
-    private scenarios = [
-        {
-            id: 1,
-            nombre: "Cancha de fútbol",
-            capacidadMaxima: 22,
-            valorPorHora: 1000,
-        },
-        {
-            id: 2,
-            nombre: "Cancha de baloncesto",
-            capacidadMaxima: 10,
-            valorPorHora: 800,
-        },
-    ];
+    @InjectRepository(Usuario)
+    private usuarioRepo: Repository<Usuario>,
 
-    private sports = [
-        {
-            id: 1,
-            nombre: "Fútbol",
-            horaInicioPermitida: "08:00",
-            horaFinPermitida: "22:00",
-            cantidadJugadoresMinima: 2,
-            cantidadJugadoresMaxima: 22,
-        },
-        {
-            id: 2,
-            nombre: "Baloncesto",
-            horaInicioPermitida: "08:00",
-            horaFinPermitida: "22:00",
-            cantidadJugadoresMinima: 2,
-            cantidadJugadoresMaxima: 10,
-        },
-        {
-            id: 3,
-            nombre: "Tenis",
-            horaInicioPermitida: "08:00",
-            horaFinPermitida: "22:00",
-            cantidadJugadoresMinima: 2,
-            cantidadJugadoresMaxima: 4,
-        }
-    ];
+    @InjectRepository(Deporte)
+    private deporteRepo: Repository<Deporte>,
 
+    @InjectRepository(Escenario)
+    private escenarioRepo: Repository<Escenario>,
 
+    @InjectRepository(HorarioDeporte)
+    private horarioRepo: Repository<HorarioDeporte>,
+  ) {}
 
-    obtenerReservas() {
-        return this.reservations;
+  async crear(dto: CrearReservaDto, usuarioId: number): Promise<Reserva> {
+    const usuario = await this.usuarioRepo.findOne({
+      where: { id: usuarioId },
+    });
+    if (!usuario) throw new NotFoundException('Usuario no existe');
+
+    const deporte = await this.deporteRepo.findOne({
+      where: { id: dto.deporteId },
+    });
+    if (!deporte) throw new NotFoundException('Deporte no existe');
+
+    const escenario = await this.escenarioRepo.findOne({
+      where: { id: dto.escenarioId },
+    });
+    if (!escenario) throw new NotFoundException('Escenario no existe');
+
+    if (dto.cantidadPersonas > escenario.capacidadMaxima) {
+      throw new BadRequestException('Supera la capacidad del escenario');
     }
 
-    obtenerReservaPorId(id: number) {
-        const reserva = this.reservations.find((reservation) => reservation.id === id);
+    const reservasExistentes = await this.reservaRepo.find({
+      where: {
+        fecha: dto.fecha,
+        escenario: { id: dto.escenarioId },
+      },
+      relations: ['escenario'],
+    });
 
-        if (!reserva) {
-            return {
-                mensaje: `No se encontró la reserva con id ${id}`,
-            };
-        }
+    const hayTraslape = reservasExistentes.some((r) => {
+      return dto.horaInicio < r.horaFin && dto.horaFin > r.horaInicio;
+    });
 
-        return reserva;
+    if (hayTraslape) {
+      throw new ConflictException('Ya existe una reserva en ese horario');
     }
 
-    crearReserva(crearReservaDto: CrearReservaDto) {
-        // Validar que el escenario exista
-        const escenario = this.scenarios.find(
-            (s) => s.id === crearReservaDto.scenarioId,
-        );
+    const horarios = await this.horarioRepo.find({
+      where: { deporte: { id: dto.deporteId } },
+      relations: ['deporte'],
+    });
 
-        if (!escenario) {
-            return {
-                mensaje: 'El escenario no existe',
-            };
-        }
+    const horarioValido = horarios.some((h) => {
+      return dto.horaInicio >= h.horaInicio && dto.horaFin <= h.horaFin;
+    });
 
-        // Validar capacidad del escenario
-        if (crearReservaDto.cantidadPersonas > escenario.capacidadMaxima) {
-            return {
-                mensaje: 'La cantidad de personas supera la capacidad del escenario',
-            };
-        }
-
-        // Validar que el deporte exista
-        const deporte = this.sports.find(
-            (s) => s.id === crearReservaDto.sportId,
-        );
-
-        if (!deporte) {
-            return {
-                mensaje: 'El deporte no existe',
-            };
-        }
-
-        // Validar horario permitido del deporte
-        if (
-            crearReservaDto.horaInicio < deporte.horaInicioPermitida ||
-            crearReservaDto.horaFin > deporte.horaFinPermitida
-        ) {
-            return {
-                mensaje: 'La reserva está fuera del horario permitido para este deporte',
-            };
-        }
-
-        // Validar cantidad mínima y máxima de jugadores según el deporte
-        if (
-            crearReservaDto.cantidadPersonas < deporte.cantidadJugadoresMinima ||
-            crearReservaDto.cantidadPersonas > deporte.cantidadJugadoresMaxima
-        ) {
-            return {
-                mensaje:
-                    'La cantidad de personas no cumple con los límites permitidos para este deporte',
-            };
-        }
-
-        // Validar que horaInicio sea menor que horaFin
-        const inicioMinutos = this.convertirHoraMinuto(crearReservaDto.horaInicio);
-        const finMinutos = this.convertirHoraMinuto(crearReservaDto.horaFin);
-
-        if (inicioMinutos >= finMinutos) {
-            return {
-                mensaje: 'La hora de inicio debe ser menor que la hora de fin',
-            };
-        }
-
-        // Validar traslape de horario
-        const hayTraslape = this.reservations.some((reservation) => {
-            return (
-                reservation.scenarioId === crearReservaDto.scenarioId &&
-                reservation.fecha === crearReservaDto.fecha &&
-                crearReservaDto.horaInicio < reservation.horaFin &&
-                crearReservaDto.horaFin > reservation.horaInicio
-            );
-        });
-
-        if (hayTraslape) {
-            return {
-                mensaje:
-                    'No se puede crear la reserva porque hay traslape de horario en ese escenario',
-            };
-        }
-
-        // Calcular duración y valor total
-        const duracionMinutos = finMinutos - inicioMinutos;
-        const duracionHoras = duracionMinutos / 60;
-        const valorTotal = duracionHoras * escenario.valorPorHora;
-    
-
-        // Crear reserva
-        const nuevaReserva = {
-            id: this.reservations.length + 1,
-            ...crearReservaDto,
-            valorTotal,
-        };
-
-        this.reservations.push(nuevaReserva);
-
-        return {
-            mensaje: 'Reserva creada correctamente',
-            reserva: nuevaReserva,
-        };
+    if (!horarioValido) {
+      throw new BadRequestException('Horario no permitido para este deporte');
     }
 
-    actualizarReserva(id: number, actualizarReservaDto: ActualizarReservaDto) {
-        const indice = this.reservations.findIndex(
-            (reservation) => reservation.id === id,
-        );
+    const horaInicio = parseInt(dto.horaInicio.split(':')[0]);
+    const horaFin = parseInt(dto.horaFin.split(':')[0]);
 
-        if (indice === -1) {
-            return {
-                mensaje: `No se encontró la reserva con id ${id}`,
-            };
-        }
+    const horas = horaFin - horaInicio;
+    const total = horas * escenario.valorPorHora;
 
-        this.reservations[indice] = {
-            ...this.reservations[indice],
-            ...actualizarReservaDto,
-        };
+    const reserva = this.reservaRepo.create({
+      ...dto,
+      total,
+      usuario,
+      deporte,
+      escenario,
+    });
 
-        return {
-            mensaje: 'Reserva actualizada correctamente',
-            reserva: this.reservations[indice],
-        };
+    return this.reservaRepo.save(reserva);
+  }
+
+  findAll(usuario: any) {
+    if (usuario.role === 'admin') {
+      return this.reservaRepo.find({
+        relations: ['usuario', 'deporte', 'escenario'],
+      });
     }
 
-    eliminarReserva(id: number) {
-        const indice = this.reservations.findIndex(
-            (reservation) => reservation.id === id,
-        );
-
-        if (indice === -1) {
-            return {
-                mensaje: `No se encontró la reserva con id ${id}`,
-            };
-        }
-
-        const reservaEliminada = this.reservations[indice];
-        this.reservations.splice(indice, 1);
-
-        return {
-            mensaje: 'Reserva eliminada correctamente',
-            reserva: reservaEliminada,
-        };
-    }
-
-    //Funcion para calcular el valor total de la reserva
-    private convertirHoraMinuto(hora: string): number {
-        const [horas, minutos] = hora.split(':').map(Number);
-        return horas * 60 + minutos;
-    }
+    return this.reservaRepo.find({
+      where: { usuario: { id: usuario.userId } },
+      relations: ['usuario', 'deporte', 'escenario'],
+    });
+  }
 }

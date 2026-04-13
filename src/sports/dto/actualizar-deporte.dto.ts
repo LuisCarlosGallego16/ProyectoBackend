@@ -1,4 +1,4 @@
-export class ActualizarDeportDto {
+export class ActualizarDeporteDto {
     nombre?: string;
     horaInicio?: string;
     horaFin?: string;

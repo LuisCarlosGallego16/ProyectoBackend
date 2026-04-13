@@ -1,11 +1,21 @@
+import { IsNumber, IsString } from 'class-validator';
+
 export class CrearReservaDto {
-    userId!: number;
-    scenarioId!: number;
-    sportId!: number;
-    fecha!: string;
-    horaInicio!: string;
-    horaFin!: string;
-    cantidadPersonas!: number;
-    valorTotal!: number;
-    estado!: string;
+  @IsNumber()
+  deporteId!: number;
+
+  @IsNumber()
+  escenarioId!: number;
+
+  @IsString()
+  fecha!: string;
+
+  @IsString()
+  horaInicio!: string;
+
+  @IsString()
+  horaFin!: string;
+
+  @IsNumber()
+  cantidadPersonas!: number;
 }

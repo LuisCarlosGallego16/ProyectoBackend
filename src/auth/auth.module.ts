@@ -1,19 +1,30 @@
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { UsersModule } from '../users/users.module';
-import { JwtModule } from '@nestjs/jwt';
+
+import { UsuariosModule } from '../users/users.module';
 import { JwtEstrategia } from './estrategias/jwt.estrategia';
+import { TelegramService } from './telegram.service';
 
 @Module({
   imports: [
-    UsersModule,
-    JwtModule.register({
-      secret: 'mi_secreto_super_seguro',
-      signOptions: { expiresIn: '1h' },
+    UsuariosModule,
+    ConfigModule,
+
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '1h' },
+      }),
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtEstrategia],
+  providers: [AuthService, JwtEstrategia, TelegramService],
+  exports: [AuthService],
 })
 export class AuthModule {}

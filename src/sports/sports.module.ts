@@ -1,9 +1,16 @@
 import { Module } from '@nestjs/common';
-import { SportsController } from './sports.controller';
-import { SportsService } from './sports.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { Deporte } from './entity/deporte.entity';
+import { HorarioDeporte } from './entity/horario-deporte.entity';
+
+import { DeportesService } from './sports.service';
+import { DeportesController } from './sports.controller';
 
 @Module({
-  controllers: [SportsController],
-  providers: [SportsService]
+  imports: [TypeOrmModule.forFeature([Deporte, HorarioDeporte])],
+  controllers: [DeportesController],
+  providers: [DeportesService],
+  exports: [DeportesService],
 })
-export class SportsModule {}
+export class DeportesModule {}
