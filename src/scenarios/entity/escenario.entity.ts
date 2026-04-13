@@ -25,7 +25,7 @@ export class Escenario {
   @Column('decimal')
   valorPorHora!: number;
 
-  // 🔗 Relación
+  //Relación en la base de datos con las otras entidades
   @OneToMany(() => Reserva, (reserva) => reserva.escenario)
   reservas!: Reserva[];
 }

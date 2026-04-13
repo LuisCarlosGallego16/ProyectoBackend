@@ -1,5 +1,6 @@
 import { IsNumber, IsString } from 'class-validator';
 
+// DTO para crear una reserva
 export class CrearReservaDto {
   @IsNumber()
   deporteId!: number;

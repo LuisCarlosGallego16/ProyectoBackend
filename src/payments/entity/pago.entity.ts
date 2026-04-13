@@ -8,7 +8,7 @@ import {
 
 import { Reserva } from '../../reservations/entity/reserva.entity';
 import { Usuario } from '../../users/entity/usuario.entity';
-
+// Define esta clase como una tabla llamada "pagos" en la base de datos
 @Entity('pagos')
 export class Pago {
 
@@ -22,7 +22,7 @@ export class Pago {
   estado!: string; // aprobado, rechazado, pendiente
 
   @Column()
-  metodo!: string; // simulado
+  metodo!: string; 
 
   @Column()
   transaccionId!: string;
@@ -30,7 +30,7 @@ export class Pago {
   @CreateDateColumn()
   fecha!: Date;
 
-  // 🔗 Relaciones
+  // Relaciones
   @ManyToOne(() => Reserva, (reserva) => reserva.id)
   reserva!: Reserva;
 

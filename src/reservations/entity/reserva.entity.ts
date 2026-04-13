@@ -9,6 +9,7 @@ import { Usuario } from '../../users/entity/usuario.entity';
 import { Deporte } from '../../sports/entity/deporte.entity';
 import { Escenario } from '../../scenarios/entity/escenario.entity';
 
+// Entidad que representa una reserva en la base de datos
 @Entity('reservas')
 export class Reserva {
 
@@ -33,7 +34,7 @@ export class Reserva {
   @Column()
   total!: number;
 
-  // Relaciones
+  // Relaciones en la base de datos con otras entidades
   @ManyToOne(() => Usuario, (usuario) => usuario.reservas)
   usuario!: Usuario;
 

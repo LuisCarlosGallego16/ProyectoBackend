@@ -19,13 +19,14 @@ import { Roles } from '../auth/decorators/roles.decorator';
 export class PaymentsController {
   constructor(private readonly service: PaymentsService) {}
 
+  // Endpoint para crear un nuevo pago
   @UseGuards(JwtGuardia)
   @Post()
   crear(@Body() dto: CrearPagoDto, @Req() req: Request) {
     const user = req.user as any;
     return this.service.crear(dto, user.userId);
   }
-
+  // Endpoint para obtener todos los pagos (solo para administradores)
   @UseGuards(JwtGuardia, RolesGuardia)
   @Roles('admin')
   @Get()

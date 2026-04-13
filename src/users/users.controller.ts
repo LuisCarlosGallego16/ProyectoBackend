@@ -12,6 +12,7 @@ import {
 import { UsuariosService } from './users.service';
 import { CrearUsuarioDto } from './dto/crear-usuario.dto';
 import { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto';
+import { CambiarRolDto } from './dto/cambiar-rol.dto'; // 🔥 IMPORTANTE
 
 import { JwtGuardia } from '../auth/guardias/jwt.guardia';
 import { RolesGuardia } from '../auth/guardias/roles.guardia';
@@ -48,6 +49,17 @@ export class UsuariosController {
     @Body() actualizarUsuarioDto: ActualizarUsuarioDto,
   ) {
     return this.usuariosService.actualizar(+id, actualizarUsuarioDto);
+  }
+
+  // 🔥 👉 AQUÍ VA TU MÉTODO DE CAMBIAR ROL
+  @UseGuards(JwtGuardia, RolesGuardia)
+  @Roles('admin')
+  @Patch(':id/rol')
+  cambiarRol(
+    @Param('id') id: string,
+    @Body() dto: CambiarRolDto,
+  ) {
+    return this.usuariosService.cambiarRol(+id, dto.role);
   }
 
   @UseGuards(JwtGuardia, RolesGuardia)

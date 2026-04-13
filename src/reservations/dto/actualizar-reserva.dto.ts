@@ -1,3 +1,4 @@
+// DTO para actualizar una reserva
 export class ActualizarReservaDto {
     userId?: number;
     scenarioId?: number;

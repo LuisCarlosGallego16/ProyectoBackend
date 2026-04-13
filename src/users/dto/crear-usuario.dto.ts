@@ -1,5 +1,7 @@
 import { IsEmail, IsString, MinLength } from 'class-validator';
 
+
+// DTO utilizado para validar los datos al crear un usuario, que tengan el formato establecido
 export class CrearUsuarioDto {
 
   @IsString()

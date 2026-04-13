@@ -13,18 +13,22 @@ import { TelegramService } from './telegram.service';
   imports: [
     UsuariosModule,
     ConfigModule,
-
+    // Configuración dinámica del JWT
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
+        //Clave secreta para firmar tokens
         secret: configService.get<string>('JWT_SECRET'),
+        //Tiempo de expiración del token
         signOptions: { expiresIn: '1h' },
       }),
     }),
   ],
   controllers: [AuthController],
+  // Servicios y estrategias disponibles en este módulo
   providers: [AuthService, JwtEstrategia, TelegramService],
+  // Exportamos AuthService para usarlo en otros módulos
   exports: [AuthService],
 })
 export class AuthModule {}
