@@ -1,35 +1,75 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
+
+import { DeportesService } from './sports.service';
+
 import { CrearDeporteDto } from './dto/crear-deporte.dto';
-import { ActualizarDeportDto } from './dto/actualizar-deport.dto';
-import { SportsService } from './sports.service';
+import { ActualizarDeporteDto } from './dto/actualizar-deporte.dto';
+import { CrearHorarioDeporteDto } from './dto/crear-horario-deporte.dto';
 
-@Controller('sports')
-export class SportsController {
-    constructor(private readonly sportsService: SportsService) {}
+import { JwtGuardia } from '../auth/guardias/jwt.guardia';
+import { RolesGuardia } from '../auth/guardias/roles.guardia';
+import { Roles } from '../auth/decorators/roles.decorator';
 
-    @Get()
-    obtenerDeportes() {
-        return this.sportsService.obtenerDeportes();
-    }
+@Controller('deportes')
+export class DeportesController {
+  constructor(private readonly deportesService: DeportesService) {}
 
-    @Get(':id')
-    ObtenerDeportePorId(@Param('id') id: string) {
-        return this.sportsService.ObtenerDeportePorId(Number(id));
-    }
+  @UseGuards(JwtGuardia, RolesGuardia)
+  @Roles('admin')
+  @Post()
+  crear(@Body() dto: CrearDeporteDto) {
+    return this.deportesService.crear(dto);
+  }
 
-    @Post()
-    crearDeporte(@Body() crearDeporte: CrearDeporteDto) {
-        return this.sportsService.crearDeporte(crearDeporte);
-    }
+  @Get()
+  obtenerTodos() {
+    return this.deportesService.obtenerTodos();
+  }
 
-    @Patch(':id')
-    actualizarDeporte(@Param('id') id: string, @Body() actualizarDeporteDto: ActualizarDeportDto) {
-        return this.sportsService.actualizarDeporte(Number(id), actualizarDeporteDto);
-    }
-    
-    @Delete(':id')
-    eliminarDeporte(@Param('id') id: string) {
-        return this.sportsService.eliminarDeporte(Number(id));
-    }
+  @Get(':id')
+  obtenerUno(@Param('id') id: string) {
+    return this.deportesService.obtenerUno(+id);
+  }
+
+  @UseGuards(JwtGuardia, RolesGuardia)
+  @Roles('admin')
+  @Patch(':id')
+  actualizar(@Param('id') id: string, @Body() dto: ActualizarDeporteDto) {
+    return this.deportesService.actualizar(+id, dto);
+  }
+
+  @UseGuards(JwtGuardia, RolesGuardia)
+  @Roles('admin')
+  @Delete(':id')
+  eliminar(@Param('id') id: string) {
+    return this.deportesService.eliminar(+id);
+  }
+
+  @UseGuards(JwtGuardia, RolesGuardia)
+  @Roles('admin')
+  @Post('horarios')
+  crearHorario(@Body() dto: CrearHorarioDeporteDto) {
+    return this.deportesService.crearHorario(dto);
+  }
+
+  @Get(':id/horarios')
+  obtenerHorarios(@Param('id') id: string) {
+    return this.deportesService.obtenerHorarios(+id);
+  }
+
+  @UseGuards(JwtGuardia, RolesGuardia)
+  @Roles('admin')
+  @Delete('horarios/:id')
+  eliminarHorario(@Param('id') id: string) {
+    return this.deportesService.eliminarHorario(+id);
+  }
 }
-

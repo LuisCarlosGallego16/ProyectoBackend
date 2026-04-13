@@ -1,37 +1,87 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
+
+import { Usuario } from './entity/usuario.entity';
 import { CrearUsuarioDto } from './dto/crear-usuario.dto';
+import { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto';
 
 @Injectable()
-export class UsersService {
+export class UsuariosService {
+  constructor(
+    @InjectRepository(Usuario)
+    private usuarioRepositorio: Repository<Usuario>,
+  ) {}
 
-  private usuarios: any[] = [];
+  async crear(crearUsuarioDto: CrearUsuarioDto): Promise<Usuario> {
+    const { email, password } = crearUsuarioDto;
 
-  async crear(datos: CrearUsuarioDto) {
+    const usuarioExistente = await this.usuarioRepositorio.findOne({
+      where: { email },
+    });
 
-    const usuario = {
-      id: Date.now(),
-      correo: datos.correo,
-      contrasena: datos.contrasena,
-    };
+    if (usuarioExistente) {
+      throw new ConflictException('El email ya está registrado');
+    }
 
-    this.usuarios.push(usuario);
+    const passwordEncriptado = await bcrypt.hash(password, 10);
+
+    const usuario = this.usuarioRepositorio.create({
+      ...crearUsuarioDto,
+      role: 'user',
+      password: passwordEncriptado,
+    });
+
+    return await this.usuarioRepositorio.save(usuario);
+  }
+
+  obtenerTodos(): Promise<Usuario[]> {
+    return this.usuarioRepositorio.find();
+  }
+
+  async obtenerUno(id: number): Promise<Usuario> {
+    const usuario = await this.usuarioRepositorio.findOne({
+      where: { id },
+    });
+
+    if (!usuario) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
     return usuario;
   }
 
-  async buscarTodos() {
-    return this.usuarios;
+  async buscarPorEmail(email: string): Promise<Usuario | null> {
+    return this.usuarioRepositorio.findOne({
+      where: { email },
+    });
   }
 
-  async buscarPorId(id: number) {
-    return this.usuarios.find(u => u.id === id);
+  async actualizar(
+    id: number,
+    actualizarUsuarioDto: ActualizarUsuarioDto,
+  ): Promise<Usuario> {
+    const usuario = await this.obtenerUno(id);
+
+    if (actualizarUsuarioDto.password) {
+      actualizarUsuarioDto.password = await bcrypt.hash(
+        actualizarUsuarioDto.password,
+        10,
+      );
+    }
+
+    Object.assign(usuario, actualizarUsuarioDto);
+
+    return this.usuarioRepositorio.save(usuario);
   }
 
-  async buscarPorCorreo(correo: string) {
-    return this.usuarios.find(u => u.correo === correo);
-  }
-
-  async eliminar(id: number) {
-    this.usuarios = this.usuarios.filter(u => u.id !== id);
-    return { mensaje: 'Usuario eliminado' };
+  async eliminar(id: number): Promise<void> {
+    const usuario = await this.obtenerUno(id);
+    await this.usuarioRepositorio.remove(usuario);
   }
 }

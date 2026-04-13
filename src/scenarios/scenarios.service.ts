@@ -1,80 +1,59 @@
-import { Injectable } from '@nestjs/common';
-import { crearEscenarioDto } from './dto/crear-escenario.dto';
-import { actualizarEscenarioDto } from './dto/actualizar.dto';
+import {
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
+import { Escenario } from './entity/escenario.entity';
+import { CrearEscenarioDto } from './dto/crear-escenario.dto';
+import { ActualizarEscenarioDto } from './dto/actualizar.dto';
 
 @Injectable()
 export class ScenariosService {
-    private scenarios = [
-        {
-            id: 1,
-            nombre: 'Cancha de fútbol',
-            ubicacion: 'Parque Central',
-            capacidadMaxima: 22,
-            valorPorHora: 100,
-            estado: 'disponible'
-        },
-        {
-            id: 2,
-            nombre: 'Cancha de baloncesto',
-            ubicacion: 'Gimnasio Municipal',
-            capacidadMaxima: 10,
-            valorPorHora: 80,
-            estado: 'ocupado'
-        }
-    ];
 
-    obtenerEscenarios() {
-        return this.scenarios;
+  constructor(
+    @InjectRepository(Escenario)
+    private escenarioRepo: Repository<Escenario>,
+  ) {}
+
+  // ✅ Crear
+  crear(dto: CrearEscenarioDto) {
+    const escenario = this.escenarioRepo.create(dto);
+    return this.escenarioRepo.save(escenario);
+  }
+
+  // ✅ Obtener todos
+  obtenerTodos() {
+    return this.escenarioRepo.find();
+  }
+
+  // ✅ Obtener uno
+  async obtenerUno(id: number) {
+    const escenario = await this.escenarioRepo.findOne({
+      where: { id },
+    });
+
+    if (!escenario) {
+      throw new NotFoundException('Escenario no encontrado');
     }
 
-    obtenerEscenarioPorId(id: number) {
-        const escenario = this.scenarios.find((scenarios) => scenarios.id === id);
-        if (!escenario) {
-            return { mensaje: 'Escenario no encontrado' };
-        }
-        return escenario;
-    }
+    return escenario;
+  }
 
-    crearEscenario(crearEscenarioDto: crearEscenarioDto) {
-        const nuevoEscenario = {
-            id: this.scenarios.length + 1,
-            ...crearEscenarioDto
-        };
-        this.scenarios.push(nuevoEscenario);
+  // ✅ Actualizar
+  async actualizar(id: number, dto: ActualizarEscenarioDto) {
+    const escenario = await this.obtenerUno(id);
 
-        return{
-            mensaje: 'Escenario creado exitosamente',
-            escenario: nuevoEscenario,
-        };
-    }
+    Object.assign(escenario, dto);
 
-    actualizarEscenario(id: number, actualizarEscenarioDto: actualizarEscenarioDto) {
-        const indice = this.scenarios.findIndex((scenarios) => scenarios.id === id);
-        if (indice === -1) {
-            return { mensaje: 'Escenario con id ${id} no encontrado' };
-        }
-        this.scenarios[indice] = {
-            ...this.scenarios[indice],
-            ...actualizarEscenarioDto
-        };
+    return this.escenarioRepo.save(escenario);
+  }
 
-        return {
-            mensaje: 'Escenario actualizado exitosamente',
-            escenario: this.scenarios[indice],
-        };
-    }
-
-    eliminarEscenario(id: number) {
-        const indice = this.scenarios.findIndex((scenarios) => scenarios.id === id);
-        if (indice === -1) {
-            return { mensaje: 'Escenario con id ${id} no encontrado' };
-        }
-        const escenarioEliminado = this.scenarios[indice];
-        this.scenarios.splice(indice, 1);
-
-        return {
-            mensaje: 'Escenario eliminado exitosamente',
-            escenario: escenarioEliminado,
-        };
-    }
+  // ✅ Eliminar
+  async eliminar(id: number) {
+    const escenario = await this.obtenerUno(id);
+    return this.escenarioRepo.remove(escenario);
+  }
 }

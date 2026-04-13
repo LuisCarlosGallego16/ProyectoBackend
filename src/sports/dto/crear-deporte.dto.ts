@@ -1,7 +1,12 @@
+import { IsString, IsNumber } from 'class-validator';
+
 export class CrearDeporteDto {
-    nombre!: string;
-    horaInicio!: string;
-    horaFin!: string;
-    cantidadJugadoresMinima!: number;
-    cantidadJugadoresMaxima!: number;
+  @IsString()
+  nombre!: string;
+
+  @IsNumber()
+  cantidadJugadoresMinima!: number;
+
+  @IsNumber()
+  cantidadJugadoresMaxima!: number;
 }

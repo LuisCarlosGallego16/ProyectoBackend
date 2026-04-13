@@ -1,60 +1,85 @@
-import { Injectable } from '@nestjs/common';
-import { RegistroDto } from './dto/registro.dto';
-import { LoginDto } from './dto/login.dto';
-import { UsersService } from '../users/users.service';
-import * as bcrypt from 'bcrypt';
+import {
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+
 import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+
+import { UsuariosService } from '../users/users.service';
+import { TelegramService } from './telegram.service';
 
 @Injectable()
 export class AuthService {
-
   constructor(
-    private servicioUsuarios: UsersService,
-    private jwtService: JwtService
+    private usuariosService: UsuariosService,
+    private jwtService: JwtService,
+    private telegramService: TelegramService,
   ) {}
 
-  async registrar(datos: RegistroDto) {
+  // 🔥 almacenamiento temporal códigos 2FA
+  private codigos2FA = new Map<string, string>();
 
-    const usuarioExistente = await this.servicioUsuarios.buscarPorCorreo(datos.correo);
+  // =========================
+  // LOGIN (FASE 1)
+  // =========================
+  async login(email: string, password: string) {
+    const usuario = await this.usuariosService.buscarPorEmail(email);
 
-    if (usuarioExistente) {
-      return { mensaje: 'El usuario ya existe' };
+    if (!usuario) {
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    const hash = await bcrypt.hash(datos.contrasena, 10);
+    const passwordValido = await bcrypt.compare(
+      password,
+      usuario.password,
+    );
 
-    const usuario = await this.servicioUsuarios.crear({
-      correo: datos.correo,
-      contrasena: hash,
-    });
+    if (!passwordValido) {
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
+
+    // 🔥 generar código
+    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+
+    this.codigos2FA.set(email, codigo);
+
+    // 🔥 enviar a Telegram
+    await this.telegramService.enviarMensaje(
+      `Tu código de acceso es: ${codigo}`,
+    );
 
     return {
-      mensaje: 'Usuario registrado correctamente',
-      usuario
+      message: 'Código enviado a Telegram',
     };
   }
 
-  async iniciarSesion(datos: LoginDto) {
+  // =========================
+  // VERIFICAR 2FA
+  // =========================
+  async verificarCodigo(email: string, codigo: string) {
+    const codigoGuardado = this.codigos2FA.get(email);
 
-    const usuario = await this.servicioUsuarios.buscarPorCorreo(datos.correo);
+    if (!codigoGuardado || codigoGuardado !== codigo) {
+      throw new UnauthorizedException('Código inválido');
+    }
+
+    const usuario = await this.usuariosService.buscarPorEmail(email);
 
     if (!usuario) {
-      return { mensaje: 'Usuario no encontrado' };
+      throw new UnauthorizedException('Usuario no encontrado');
     }
 
-    const esValida = await bcrypt.compare(datos.contrasena, usuario.contrasena);
+    const payload = {
+      sub: usuario.id,
+      email: usuario.email,
+      role: usuario.role,
+    };
 
-    if (!esValida) {
-      return { mensaje: 'Contraseña incorrecta' };
-    }
-
-    const payload = { id: usuario.id, correo: usuario.correo };
-
-    const token = this.jwtService.sign(payload);
+    this.codigos2FA.delete(email);
 
     return {
-      mensaje: 'Inicio de sesión exitoso',
-      access_token: token
+      access_token: this.jwtService.sign(payload),
     };
   }
 }

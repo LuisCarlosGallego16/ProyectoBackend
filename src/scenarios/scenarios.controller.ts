@@ -1,40 +1,54 @@
-import { Controller, Get, Param, Post, Body, Patch, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
+
 import { ScenariosService } from './scenarios.service';
-import { crearEscenarioDto } from './dto/crear-escenario.dto';
-import { actualizarEscenarioDto } from './dto/actualizar.dto';
+import { CrearEscenarioDto } from './dto/crear-escenario.dto';
+import { ActualizarEscenarioDto } from './dto/actualizar.dto';
 
-@Controller('scenarios')
+import { JwtGuardia } from '../auth/guardias/jwt.guardia';
+import { RolesGuardia } from '../auth/guardias/roles.guardia';
+import { Roles } from '../auth/decorators/roles.decorator';
+
+@Controller('escenarios')
 export class ScenariosController {
-    constructor(private readonly scenariosService: ScenariosService) {}
+  constructor(private readonly service: ScenariosService) {}
 
-    @Get()
-    obtenerEscenarios() {
-        return this.scenariosService.obtenerEscenarios();
-    }
-
-    @Get(':id')
-    obtenerEscenarioPorId(@Param('id') id: string) {
-        return this.scenariosService.obtenerEscenarioPorId(Number(id));
-    }
-
-    @Post()
-    crearEscenario(@Body() crearEscenarioDto: crearEscenarioDto) {
-        return this.scenariosService.crearEscenario(crearEscenarioDto);
+  @UseGuards(JwtGuardia, RolesGuardia)
+  @Roles('admin')
+  @Post()
+  crear(@Body() dto: CrearEscenarioDto) {
+    return this.service.crear(dto);
   }
 
-    @Patch(':id')
-    actualizarEscenario(
-    @Param('id') id: string,
-    @Body() actualizarEscenarioDto: actualizarEscenarioDto,
-  ) {
-    return this.scenariosService.actualizarEscenario(
-      Number(id),
-      actualizarEscenarioDto,
-    );
+  @Get()
+  obtenerTodos() {
+    return this.service.obtenerTodos();
   }
 
-    @Delete(':id')
-    eliminarEscenario(@Param('id') id: string) {
-    return this.scenariosService.eliminarEscenario(Number(id));
+  @Get(':id')
+  obtenerUno(@Param('id') id: string) {
+    return this.service.obtenerUno(+id);
+  }
+
+  @UseGuards(JwtGuardia, RolesGuardia)
+  @Roles('admin')
+  @Patch(':id')
+  actualizar(@Param('id') id: string, @Body() dto: ActualizarEscenarioDto) {
+    return this.service.actualizar(+id, dto);
+  }
+
+  @UseGuards(JwtGuardia, RolesGuardia)
+  @Roles('admin')
+  @Delete(':id')
+  eliminar(@Param('id') id: string) {
+    return this.service.eliminar(+id);
   }
 }

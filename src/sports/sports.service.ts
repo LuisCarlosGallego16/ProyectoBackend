@@ -1,78 +1,111 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
+import { Deporte } from './entity/deporte.entity';
+import { HorarioDeporte } from './entity/horario-deporte.entity';
+
 import { CrearDeporteDto } from './dto/crear-deporte.dto';
-import { ActualizarDeportDto } from './dto/actualizar-deport.dto';
+import { ActualizarDeporteDto } from './dto/actualizar-deporte.dto';
+import { CrearHorarioDeporteDto } from './dto/crear-horario-deporte.dto';
 
 @Injectable()
-export class SportsService {
-    private sports =[
-        {
-            id: 1,
-            nombre: 'Futbol',
-            horaInicio: '06:00',
-            horaFin: '22:00',
-            cantidadJugadoresMinima: 10,
-            cantidadJugadoresMaxima: 22,
-        },
-        {
-            id: 2,
-            nombre: 'Basketball',
-            horaInicio: '06:00',
-            horaFin: '22:00',
-            cantidadJugadoresMinima: 2,
-            cantidadJugadoresMaxima: 4,
-        }
-    ];
+export class DeportesService {
+  constructor(
+    @InjectRepository(Deporte)
+    private deporteRepo: Repository<Deporte>,
 
-    obtenerDeportes() {
-        return this.sports;
+    @InjectRepository(HorarioDeporte)
+    private horarioRepo: Repository<HorarioDeporte>,
+  ) {}
+
+  // =========================
+  // DEPORTES
+  // =========================
+
+  async crear(dto: CrearDeporteDto): Promise<Deporte> {
+    const deporte = this.deporteRepo.create(dto);
+    return this.deporteRepo.save(deporte);
+  }
+
+  obtenerTodos(): Promise<Deporte[]> {
+    return this.deporteRepo.find();
+  }
+
+  async obtenerUno(id: number): Promise<Deporte> {
+    const deporte = await this.deporteRepo.findOne({
+      where: { id },
+    });
+
+    if (!deporte) {
+      throw new NotFoundException('Deporte no encontrado');
     }
 
-    ObtenerDeportePorId(id: number) {
-        const deporte = this.sports.find((sports) => sports.id === id);
-        if (!deporte) {
-            return {
-                mensaje: 'Deporte no encontrado con id ${id}',
-            };
-        }
-        return deporte;
+    return deporte;
+  }
+
+  async actualizar(
+    id: number,
+    dto: ActualizarDeporteDto,
+  ): Promise<Deporte> {
+    const deporte = await this.obtenerUno(id);
+
+    Object.assign(deporte, dto);
+
+    return this.deporteRepo.save(deporte);
+  }
+
+  async eliminar(id: number): Promise<void> {
+    const deporte = await this.obtenerUno(id);
+    await this.deporteRepo.remove(deporte);
+  }
+
+  // =========================
+  // HORARIOS
+  // =========================
+
+  async crearHorario(dto: CrearHorarioDeporteDto): Promise<HorarioDeporte> {
+    // 🔥 Validar que el deporte exista
+    const deporte = await this.deporteRepo.findOne({
+      where: { id: dto.deporteId },
+    });
+
+    if (!deporte) {
+      throw new NotFoundException('Deporte no existe');
     }
 
-    crearDeporte(CrearDeporteDto: CrearDeporteDto) {
-        const nuevoDeporte ={
-            id: this.sports.length + 1,
-            ...CrearDeporteDto
-        };
-        this.sports.push(nuevoDeporte);
+    // 🔥 Crear horario
+    const horario = this.horarioRepo.create({
+      horaInicio: dto.horaInicio,
+      horaFin: dto.horaFin,
+      deporte,
+    });
 
-        return{
-            mensaje: 'Deporte creado correctamente',
-            deporte: nuevoDeporte
-        };
+    return this.horarioRepo.save(horario);
+  }
+
+  async obtenerHorarios(deporteId: number): Promise<HorarioDeporte[]> {
+    return this.horarioRepo.find({
+      where: {
+        deporte: { id: deporteId },
+      },
+      relations: ['deporte'],
+    });
+  }
+
+  async eliminarHorario(id: number): Promise<void> {
+    const horario = await this.horarioRepo.findOne({
+      where: { id },
+    });
+
+    if (!horario) {
+      throw new NotFoundException('Horario no encontrado');
     }
 
-    actualizarDeporte(id: number, actualizarDeporteDto: ActualizarDeportDto) {
-        const indice = this.sports.findIndex((sports) => sports.id === id);
-        if (indice === -1) {
-            throw new NotFoundException('Deporte no encontrado con id ${id}');
-        }
-        this.sports[indice] = { ...this.sports[indice], ...actualizarDeporteDto };
-        return {
-            mensaje: 'Deporte actualizado correctamente',
-            deporte: this.sports[indice]
-        };
-    }
-
-    eliminarDeporte(id: number) {
-        const indice = this.sports.findIndex((sports) => sports.id === id);
-        if (indice === -1) {
-            throw new NotFoundException('Deporte no encontrado con id ${id}');
-        }
-        const deporteEliminado = this.sports[indice];
-        this.sports.splice(indice, 1);
-        return {
-            mensaje: 'Deporte eliminado correctamente',
-            deporte: deporteEliminado,
-        };
-    }
+    await this.horarioRepo.remove(horario);
+  }
 }
-

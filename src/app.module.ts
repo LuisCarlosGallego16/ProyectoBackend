@@ -1,17 +1,17 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ConfigModule } from '@nestjs/config';
-import { UsersModule } from './users/users.module';
-import { AuthModule } from './auth/auth.module';
+
+import { UsuariosModule } from './users/users.module';
+import { DeportesModule } from './sports/sports.module';
 import { ScenariosModule } from './scenarios/scenarios.module';
-import { SportsModule } from './sports/sports.module';
 import { ReservationsModule } from './reservations/reservations.module';
 import { PaymentsModule } from './payments/payments.module';
-import { CommonModule } from './common/common.module';
-
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Usuario } from './users/entities/usuario.entity';
+import { AuthModule } from './auth/auth.module';
+import { LoggerMiddleware } from './common/middlewares/logger.middleware';
 
 @Module({
   imports: [
@@ -19,27 +19,29 @@ import { Usuario } from './users/entities/usuario.entity';
       isGlobal: true,
     }),
 
-    // 🔥 BASE DE DATOS
     TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: 'postgres',
-      database: 'reserva_db',
-      entities: [Usuario],
-      synchronize: true, // ⚠️ solo desarrollo
+      type: 'mysql',
+      host: process.env.DB_HOST || '127.0.0.1',
+      port: Number(process.env.DB_PORT) || 3306,
+      username: process.env.DB_USERNAME || 'root',
+      password: process.env.DB_PASSWORD || '',
+      database: process.env.DB_DATABASE,
+      autoLoadEntities: true,
+      synchronize: true,
     }),
 
-    UsersModule,
-    AuthModule,
+    UsuariosModule,
+    DeportesModule,
     ScenariosModule,
-    SportsModule,
     ReservationsModule,
     PaymentsModule,
-    CommonModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggerMiddleware).forRoutes('*');
+  }
+}
